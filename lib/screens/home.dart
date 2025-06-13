@@ -1,3 +1,4 @@
+import 'package:app_materias/controller/logout_controller.dart';
 import 'package:app_materias/screens/auth/maprobadas_screen.dart';
 import 'package:app_materias/screens/auth/materias_screen.dart';
 import 'package:app_materias/screens/auth/mpendientes_screen.dart';
@@ -41,13 +42,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void logout(BuildContext context) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('accessToken'); // 🔹 Elimina el token
+    var result = await logoutUser(); // 🔹 Cerrar sesión en el servidor
 
-    // 🔹 Redirige a `StartetPage`
-    Navigator.pushReplacement(
+    if (result.containsKey('error')) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(result['error']!)));
+      return;
+    }
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove(
+      'accessToken',
+    ); // 🔹 Eliminamos el token después de logout
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Sesión cerrada correctamente")),
+    );
+
+    // 🔹 Reemplazamos TODA la pila de navegación para evitar volver atrás
+    Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => StartetPage()),
+      MaterialPageRoute(builder: (context) => const StartetPage()),
+      (route) =>
+          false, // 🔹 Esto elimina todas las pantallas previas en la pila
     );
   }
 
@@ -67,7 +85,6 @@ class _HomeScreenState extends State<HomeScreen> {
               width: double.infinity,
               height: double.infinity,
               child: SingleChildScrollView(
-                // 🔹 Evita el overflow haciendo que la pantalla sea desplazable
                 child: Column(
                   children: [
                     const PopularProducts(),

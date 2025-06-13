@@ -71,36 +71,51 @@ class SignInScreen extends StatelessWidget {
                       key: _formKey,
                       child: Column(
                         children: [
+                          // 🔹 Validación del email
                           TextFormField(
                             controller: emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "El email es obligatorio";
+                              }
+                              if (!RegExp(
+                                r'^[^@]+@[^@]+\.[a-zA-Z]{2,}$',
+                              ).hasMatch(value)) {
+                                return "Ingrese un email válido";
+                              }
+                              return null;
+                            },
                             decoration: const InputDecoration(
-                              hintText: 'Email',
+                              hintText: "Email",
                               filled: true,
                               fillColor: Colors.white,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 24.0,
-                                vertical: 16.0,
-                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(50),
                                 ),
                               ),
                             ),
-                            keyboardType: TextInputType.emailAddress,
                           ),
                           const SizedBox(height: 16.0),
+
+                          // 🔹 Validación de la contraseña
                           TextFormField(
                             controller: passwordController,
                             obscureText: true,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return "La contraseña es obligatoria";
+                              }
+                              if (value.length < 6) {
+                                return "Debe tener al menos 6 caracteres";
+                              }
+                              return null;
+                            },
                             decoration: const InputDecoration(
-                              hintText: 'Password',
+                              hintText: "Password",
                               filled: true,
                               fillColor: Colors.white,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 24.0,
-                                vertical: 16.0,
-                              ),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.all(
                                   Radius.circular(50),
@@ -109,6 +124,7 @@ class SignInScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16.0),
+
                           ElevatedButton(
                             onPressed: () => handleLogin(context),
                             style: ElevatedButton.styleFrom(
@@ -121,10 +137,11 @@ class SignInScreen extends StatelessWidget {
                             child: const Text("Sign in"),
                           ),
                           const SizedBox(height: 16.0),
+
                           TextButton(
                             onPressed: () {},
                             child: Text(
-                              'Forgot Password?',
+                              "Forgot Password?",
                               style: Theme.of(
                                 context,
                               ).textTheme.bodyMedium!.copyWith(

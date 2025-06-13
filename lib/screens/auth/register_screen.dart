@@ -1,34 +1,39 @@
+import 'package:flutter/material.dart';
 import 'package:app_materias/controller/register_controller.dart';
 import 'package:app_materias/screens/auth/login_screen.dart';
-import 'package:flutter/material.dart';
 
-// ignore: must_be_immutable
-class RegisterScreen extends StatelessWidget {
-  final _formKey = GlobalKey<FormState>();
-  TextEditingController nameController = TextEditingController();
-  TextEditingController emailController = TextEditingController();
-  TextEditingController passwordController = TextEditingController();
-
+class RegisterScreen extends StatefulWidget {
   RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  TextEditingController nameController = TextEditingController();
+
+  TextEditingController emailController = TextEditingController();
+
+  TextEditingController passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // 🔹 Imagen translúcida de fondo que cubre toda la pantalla
+          // 🔹 Fondo con imagen translúcida
           Positioned.fill(
             child: Opacity(
-              opacity: 0.7, // Ajusta la transparencia aquí
+              opacity: 0.7,
               child: Image.asset("assets/images/fondo.jpg", fit: BoxFit.cover),
             ),
           ),
           SafeArea(
             child: Container(
               width: double.infinity,
-              height:
-                  double
-                      .infinity, // 🔹 Garantiza que el fondo cubra toda la pantalla
+              height: double.infinity,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
@@ -49,16 +54,22 @@ class RegisterScreen extends StatelessWidget {
                       key: _formKey,
                       child: Column(
                         children: [
+                          // 🔹 Validación del nombre
                           TextFormField(
                             controller: nameController,
-                            decoration: const InputDecoration(
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'El nombre es obligatorio';
+                              }
+                              if (value.length < 3) {
+                                return 'Debe tener al menos 3 caracteres';
+                              }
+                              return null;
+                            },
+                            decoration: InputDecoration(
                               hintText: 'Name',
                               filled: true,
                               fillColor: Color(0xFFF5FCF9),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 24.0,
-                                vertical: 16.0,
-                              ),
                               border: OutlineInputBorder(
                                 borderSide: BorderSide.none,
                                 borderRadius: BorderRadius.all(
@@ -68,17 +79,26 @@ class RegisterScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16.0),
+
+                          // 🔹 Validación del email
                           TextFormField(
                             controller: emailController,
                             keyboardType: TextInputType.emailAddress,
-                            decoration: const InputDecoration(
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'El email es obligatorio';
+                              }
+                              if (!RegExp(
+                                r'^[^@]+@[^@]+\.[a-zA-Z]{2,}$',
+                              ).hasMatch(value)) {
+                                return 'Ingrese un email válido';
+                              }
+                              return null;
+                            },
+                            decoration: InputDecoration(
                               hintText: 'Email',
                               filled: true,
                               fillColor: Color(0xFFF5FCF9),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 24.0,
-                                vertical: 16.0,
-                              ),
                               border: OutlineInputBorder(
                                 borderSide: BorderSide.none,
                                 borderRadius: BorderRadius.all(
@@ -88,17 +108,24 @@ class RegisterScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16.0),
+
+                          // 🔹 Validación de la contraseña
                           TextFormField(
                             controller: passwordController,
                             obscureText: true,
-                            decoration: const InputDecoration(
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'La contraseña es obligatoria';
+                              }
+                              if (value.length < 6) {
+                                return 'Debe tener al menos 6 caracteres';
+                              }
+                              return null;
+                            },
+                            decoration: InputDecoration(
                               hintText: 'Password',
                               filled: true,
                               fillColor: Color(0xFFF5FCF9),
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 24.0,
-                                vertical: 16.0,
-                              ),
                               border: OutlineInputBorder(
                                 borderSide: BorderSide.none,
                                 borderRadius: BorderRadius.all(
@@ -108,26 +135,26 @@ class RegisterScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 16.0),
+
+                          // 🔹 Botón de registro con manejo de errores y navegación correcta
                           ElevatedButton(
                             onPressed: () async {
                               if (_formKey.currentState!.validate()) {
                                 _formKey.currentState!.save();
-
-                                var response = await register(
+                                var errorMessage = await register(
                                   nameController.text,
                                   emailController.text,
                                   passwordController.text,
                                 );
 
-                                if (response == 201) {
+                                if (errorMessage == null) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                      content: Text(
-                                        "Registro exitoso. Ahora inicia sesión.",
-                                      ),
+                                      content: Text("Registro exitoso."),
                                       duration: Duration(seconds: 2),
                                     ),
                                   );
+
                                   Future.delayed(
                                     const Duration(seconds: 2),
                                     () {
@@ -138,6 +165,10 @@ class RegisterScreen extends StatelessWidget {
                                         ),
                                       );
                                     },
+                                  );
+                                } else {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text(errorMessage)),
                                   );
                                 }
                               }
@@ -152,6 +183,7 @@ class RegisterScreen extends StatelessWidget {
                             child: const Text("Sign Up"),
                           ),
                           const SizedBox(height: 16.0),
+
                           TextButton(
                             onPressed: () {
                               Navigator.pop(context);

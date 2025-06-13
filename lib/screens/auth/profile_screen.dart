@@ -1,3 +1,4 @@
+import 'package:app_materias/controller/edit_controller.dart';
 import 'package:flutter/material.dart';
 import 'package:app_materias/controller/profile_controller.dart';
 import 'package:app_materias/screens/home.dart';
@@ -37,7 +38,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void toggleEditing() {
     if (!isEditing) {
-      // Limpiar los campos de contraseña al empezar a editar
       passwordController.clear();
       confirmPasswordController.clear();
     }
@@ -46,38 +46,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
   }
 
-  void saveChanges() async {
+  Future<void> saveChanges() async {
     if (_formKey.currentState!.validate()) {
-      if (passwordController.text.isNotEmpty &&
-          passwordController.text != confirmPasswordController.text) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Las contraseñas no coinciden."),
-            duration: Duration(seconds: 2),
-          ),
-        );
+      _formKey.currentState!.save();
+
+      var errorMessage = await editUser(
+        name: nameController.text,
+        email:
+            emailController
+                .text, // 💡 Agregamos correctamente emailController.text aquí
+        password:
+            passwordController.text.isNotEmpty ? passwordController.text : null,
+        confirmPassword:
+            confirmPasswordController.text.isNotEmpty
+                ? confirmPasswordController.text
+                : null,
+      );
+
+      if (errorMessage != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(errorMessage)));
         return;
       }
 
-      var response = await updateUserData(
-        nameController.text,
-        emailController.text,
-        password:
-            passwordController.text.isNotEmpty ? passwordController.text : null,
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Perfil actualizado correctamente")),
       );
 
-      if (response == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Perfil actualizado correctamente")),
-        );
-        setState(() {
-          isEditing = false;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Error al actualizar: Código $response")),
-        );
-      }
+      setState(() {
+        isEditing = false;
+      });
     }
   }
 
@@ -117,9 +116,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     key: _formKey,
                     child: Column(
                       children: [
+                        // 🔹 Validación del nombre
                         TextFormField(
                           controller: nameController,
                           style: const TextStyle(color: Colors.black),
+                          enabled: isEditing,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "El nombre es obligatorio";
+                            }
+                            if (value.length < 3) {
+                              return "Debe tener al menos 3 caracteres";
+                            }
+                            return null;
+                          },
                           decoration: const InputDecoration(
                             labelText: "Nombre",
                             filled: true,
@@ -130,12 +140,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ),
-                          enabled: isEditing,
                         ),
                         const SizedBox(height: 16),
+
+                        // 🔹 Validación del correo
                         TextFormField(
                           controller: emailController,
                           style: const TextStyle(color: Colors.black),
+                          enabled: isEditing,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return "El correo es obligatorio";
+                            }
+                            if (!RegExp(
+                              r'^[^@]+@[^@]+\.[a-zA-Z]{2,}$',
+                            ).hasMatch(value)) {
+                              return "Ingrese un correo válido";
+                            }
+                            return null;
+                          },
                           decoration: const InputDecoration(
                             labelText: "Correo",
                             filled: true,
@@ -146,13 +169,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                             ),
                           ),
-                          enabled: isEditing,
                         ),
                         if (isEditing) ...[
                           const SizedBox(height: 16),
+
+                          // 🔹 Validación de la nueva contraseña con opción de visualizarla
                           TextFormField(
                             controller: passwordController,
                             obscureText: !isPasswordVisible,
+                            style: const TextStyle(color: Colors.black),
+                            validator: (value) {
+                              if (value != null &&
+                                  value.isNotEmpty &&
+                                  value.length < 6) {
+                                return "Debe tener al menos 6 caracteres";
+                              }
+                              return null;
+                            },
                             decoration: InputDecoration(
                               labelText: "Nueva Contraseña",
                               filled: true,
@@ -177,9 +210,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
+
+                          // 🔹 Validación de la confirmación de contraseña con opción de visualizarla
                           TextFormField(
                             controller: confirmPasswordController,
                             obscureText: !isConfirmPasswordVisible,
+                            style: const TextStyle(color: Colors.black),
+                            validator: (value) {
+                              if (passwordController.text.isNotEmpty &&
+                                  value != passwordController.text) {
+                                return "Las contraseñas no coinciden";
+                              }
+                              return null;
+                            },
                             decoration: InputDecoration(
                               labelText: "Confirmar Contraseña",
                               filled: true,
@@ -208,22 +251,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
                   ),
+
                   const SizedBox(height: 30),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       if (!isEditing)
-                        ElevatedButton(
-                          onPressed: toggleEditing,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blueAccent,
-                            foregroundColor: Colors.white,
-                            minimumSize: const Size(
-                              500,
-                              48,
-                            ), // Ajusta el tamaño a algo razonable
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: toggleEditing,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blueAccent,
+                              foregroundColor: Colors.white,
+                              minimumSize: const Size(
+                                48,
+                                48,
+                              ), // Ajusta el alto, pero el ancho será dinámico
+                            ),
+                            child: const Text("Editar"),
                           ),
-                          child: const Text("Editar"),
                         )
                       else
                         Row(
